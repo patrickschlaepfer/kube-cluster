@@ -1,0 +1,49 @@
+---
+- hosts: control_plane
+  become: yes
+  tasks:
+
+    - name: Install python3-pip package
+      package:
+        name: "python3-pip"
+        state: latest
+
+    - name: Install kubernetes python package
+      pip:
+        name: kubernetes
+
+    # Download and apply manifest
+    - name: Download ingress-nginx manifest to the cluster.
+      ansible.builtin.get_url:
+        url: "{{ ingress_nginx_url }}"
+        dest: ~/ingress-nginx.yaml
+        mode: '0664'
+
+    - name: Apply ingress-nginx manifest to the cluster.
+      kubernetes.core.k8s:
+        state: present
+        src: ~/ingress-nginx.yaml
+        namespace: "{{ k8s_namespace }}"
+        kubeconfig: "{{ k8s_config_file }}"
+
+    - name: Copy storageClass.yml
+      ansible.builtin.copy:
+        src: storageClass.yml
+        dest: ~/storageClass.yml
+
+    - name: Apply storageClass manifest to the cluster.
+      kubernetes.core.k8s:
+        state: present
+        src: ~/storageClass.yml
+        kubeconfig: "{{ k8s_config_file }}"
+
+    - name: Copy persistentVolumeClaim.yml
+      ansible.builtin.copy:
+        src: persistentVolumeClaim.yml
+        dest: ~/persistentVolumeClaim.yml
+
+    - name: Apply persistentVolumeClaim manifest to the cluster.
+      kubernetes.core.k8s:
+        state: present
+        src: ~/persistentVolumeClaim.yml
+        kubeconfig: "{{ k8s_config_file }}"
